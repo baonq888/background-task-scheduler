@@ -19,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Slf4j
 public class TaskManager implements TaskSubject {
     private final AsyncTaskExecutor taskExecutor;
-    private final List<TaskObserver> observers = new CopyOnWriteArrayList<>();
+    private final List<TaskObserver> observers = new CopyOnWriteArrayList<>(); // To avoid race conditions
     private final ApplicationContext context; // To find observer beans
 
     public TaskManager(
