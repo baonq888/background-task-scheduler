@@ -4,10 +4,11 @@ import com.runner.task_scheduler.taskrunner.command.TaskCommand;
 import com.runner.task_scheduler.taskrunner.observer.TaskEvent;
 import com.runner.task_scheduler.taskrunner.observer.TaskObserver;
 import com.runner.task_scheduler.taskrunner.observer.TaskSubject;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -17,24 +18,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @Slf4j
-public class TaskManager implements TaskSubject {
+public class TaskManager implements TaskSubject, ApplicationListener<ContextRefreshedEvent> {
     private final AsyncTaskExecutor taskExecutor;
     private final List<TaskObserver> observers = new CopyOnWriteArrayList<>(); // To avoid race conditions
-    private final ApplicationContext context; // To find observer beans
 
     public TaskManager(
-            @Qualifier("taskExecutor") AsyncTaskExecutor taskExecutor,
-            ApplicationContext context) {
+            @Qualifier("taskExecutor") AsyncTaskExecutor taskExecutor) {
         this.taskExecutor = taskExecutor;
-        this.context = context;
     }
 
-    @PostConstruct
-    public void registerObservers() {
-        Map<String, TaskObserver> observerMap = context.getBeansOfType(TaskObserver.class);
-        log.info("Found {} observers to register.", observerMap.size());
-        observerMap.values().forEach(this::attach);
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        ApplicationContext applicationContext = event.getApplicationContext();
+        Map<String, TaskObserver> observerBeans = applicationContext.getBeansOfType(TaskObserver.class);
+        log.info("Found {} TaskObserver beans to register.", observerBeans.size());
+        observerBeans.values().forEach(this::attach);
     }
+
 
     @Override
     public void attach(TaskObserver observer) {
@@ -93,5 +93,7 @@ public class TaskManager implements TaskSubject {
             }
         });
     }
+
+
 }
 
