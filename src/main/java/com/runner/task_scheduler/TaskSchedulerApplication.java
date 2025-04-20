@@ -7,14 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableAsync
 @Slf4j
+@EnableScheduling
 public class TaskSchedulerApplication implements CommandLineRunner {
 	private final TaskManager taskManager;
 
@@ -26,22 +25,17 @@ public class TaskSchedulerApplication implements CommandLineRunner {
 		SpringApplication.run(TaskSchedulerApplication.class, args);
 	}
 
-	// Define thread pool for executing tasks
-	@Bean(name = "taskExecutor")
-	public AsyncTaskExecutor taskExecutor() {
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(5);
-		executor.setMaxPoolSize(10);
-		executor.setQueueCapacity(20);
-		executor.setThreadNamePrefix("TaskExecutor-");
-		executor.initialize();
-		log.info("ThreadPoolTaskExecutor configured.");
-		return executor;
-	}
 
 	@Override
 	public void run(String... args) throws Exception {
 		log.info("Application started, submitting example tasks...");
+
+		if (taskManager == null) {
+			log.error("TaskManager is null! Check configuration and cycle resolution.");
+			// Optionally wait or fetch context manually - but ideally @Lazy handles this timing
+			return;
+		}
+
 		TaskCommand task1 = new LogTaskCommand("Processing data batch", 3000);
 		TaskCommand task2 = new LogTaskCommand("Sending notification email", 1000);
 		TaskCommand task3 = new LogTaskCommand("Generating report", 5000);

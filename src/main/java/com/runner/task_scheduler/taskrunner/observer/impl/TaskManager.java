@@ -5,6 +5,7 @@ import com.runner.task_scheduler.taskrunner.observer.TaskEvent;
 import com.runner.task_scheduler.taskrunner.observer.TaskObserver;
 import com.runner.task_scheduler.taskrunner.observer.TaskSubject;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -22,6 +23,7 @@ public class TaskManager implements TaskSubject, ApplicationListener<ContextRefr
     private final AsyncTaskExecutor taskExecutor;
     private final List<TaskObserver> observers = new CopyOnWriteArrayList<>(); // To avoid race conditions
 
+    @Autowired
     public TaskManager(
             @Qualifier("taskExecutor") AsyncTaskExecutor taskExecutor) {
         this.taskExecutor = taskExecutor;
@@ -41,7 +43,6 @@ public class TaskManager implements TaskSubject, ApplicationListener<ContextRefr
         if (observers.contains(observer)) {
             observers.add(observer);
             log.info("Attached observer: {}", observer.getClass().getSimpleName());
-
         }
     }
 
@@ -89,7 +90,6 @@ public class TaskManager implements TaskSubject, ApplicationListener<ContextRefr
             } catch (Exception e) {
                 log.error("Task {} failed execution.", taskId, e);
                 notifyObservers(new TaskEvent(taskId, TaskEvent.Status.FAILED, e.getMessage(), e));
-
             }
         });
     }
